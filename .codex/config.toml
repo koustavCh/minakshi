@@ -1,0 +1,14 @@
+model = "gpt-5.4"
+
+[cloud]
+enabled = true
+
+[sandbox]
+network_access = true
+
+[tools]
+web = true
+shell = true
+
+[project]
+name = "job-application-agent"

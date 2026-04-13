@@ -1,0 +1,128 @@
+{
+  "version": "1.0",
+  "user_profile_strategy": {
+    "resume_versions": {
+      "mode": "single_resume_first",
+      "allow_multiple_later": true
+    },
+    "salary_filter": {
+      "enabled": false,
+      "behavior": "ask_user_during_application"
+    }
+  },
+  "role_priority": [
+    {"title": "Senior Software Engineer", "priority_rank": 1},
+    {"title": "Backend Engineer", "priority_rank": 2},
+    {"title": "Full Stack Engineer", "priority_rank": 3},
+    {"title": "Staff Software Engineer", "priority_rank": 4, "apply_only_if_unusually_close_match": true},
+    {"title": "Principal Software Engineer", "priority_rank": 5, "apply_only_if_unusually_close_match": true},
+    {"title": "Platform Engineer", "priority_rank": 6},
+    {"title": "Product Engineer", "priority_rank": 7},
+    {"title": "Cloud Engineer", "priority_rank": 8},
+    {"title": "Distributed Systems Engineer", "priority_rank": 9}
+  ],
+  "adjacent_roles": {
+    "enabled": true,
+    "examples": [
+      "Software Developer",
+      "Member of Technical Staff",
+      "Application Engineer",
+      "Senior Developer",
+      "Platform Engineer",
+      "Product Engineer"
+    ]
+  },
+  "roles_to_skip": [
+    "Pure Frontend Engineer",
+    "Mobile Engineer",
+    "DevOps-only Engineer",
+    "ML Scientist",
+    "QA Engineer",
+    "Support Engineer"
+  ],
+  "experience_band_priority": ["5+", "6+", "4+", "8+", "10+"],
+  "search_titles": [
+    "Software Engineer",
+    "Software Developer",
+    "Senior Software Engineer",
+    "Backend Engineer",
+    "Platform Engineer",
+    "Member of Technical Staff",
+    "Application Engineer",
+    "Product Engineer",
+    "Full Stack Engineer",
+    "Cloud Engineer",
+    "Distributed Systems Engineer"
+  ],
+  "technology_match": {
+    "strongest_matches": [
+      "Java",
+      "Python",
+      "REST APIs",
+      "Distributed Systems",
+      "Microservices",
+      "Cloud",
+      "OCI",
+      "GCP",
+      "Kubernetes",
+      "Terraform",
+      "React",
+      "Asynchronous Messaging"
+    ],
+    "nice_to_have": [],
+    "avoid_prioritizing": []
+  },
+  "engineering_preference": {
+    "backend_heavy_preferred": true,
+    "full_stack_okay": true,
+    "equal_preference": false
+  },
+  "cloud_preference": {
+    "prioritize_cloud_roles": true,
+    "preferred_clouds": ["OCI", "GCP"]
+  },
+  "ai_ml_roles": {"explore": false},
+  "location_policy": {
+    "allowed_locations": ["Anywhere in U.S."],
+    "relocation_open": true
+  },
+  "work_mode_preference": [
+    "Remote first, hybrid okay",
+    "Hybrid okay",
+    "Onsite okay"
+  ],
+  "sponsorship_policy": {
+    "apply_only_if_explicitly_supported": true,
+    "skip_if_unclear": true
+  },
+  "search_strategy": {
+    "close_match_ratio": 0.7,
+    "exploratory_ratio": 0.3
+  },
+  "application_policy": {
+    "apply_to_all_strong_matches": true,
+    "apply_to_all_above_score_threshold": true,
+    "auto_apply_match_levels": ["strong", "moderate"],
+    "never_press_submit_in_initial_stage": true
+  },
+  "hard_skip_conditions": ["No sponsorship", "Clearance required", "Very niche stack"],
+  "matching_model": {
+    "weights": {
+      "role_title_match": 25,
+      "experience_band_match": 15,
+      "technology_overlap": 25,
+      "backend_cloud_distributed_alignment": 15,
+      "sponsorship_compatibility": 15,
+      "work_mode_location_alignment": 5
+    },
+    "thresholds": {
+      "strong_match_min": 80,
+      "moderate_match_min": 65,
+      "manual_review_below": 65
+    }
+  },
+  "learning_policy": {
+    "primary_mode": "adapt_based_on_interview_outcomes",
+    "secondary_mode": "become_more_conservative_over_time"
+  }
+}
