@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Set
 import re
 
-from playwright.sync_api import sync_playwright
-
 from job_agent.matcher.models import JobPosting
 
 
@@ -37,6 +35,8 @@ class GoldmanSachsCollector:
     headless: bool = False
 
     def collect(self) -> List[JobPosting]:
+        from playwright.sync_api import sync_playwright
+
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=self.headless)
             page = browser.new_page()

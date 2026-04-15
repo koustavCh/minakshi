@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
+import json
 import re
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
-
-from playwright.sync_api import sync_playwright
 
 from job_agent.matcher.models import JobPosting
 
 
 WHITESPACE_RE = re.compile(r"\s+")
 WORKDAY_JOB_RE = re.compile(r"/job/.+?_(R-[0-9-]+)")
+CAREERS_JOB_RE = re.compile(r"/us/en/jobs/(R-[0-9-]+)", flags=re.IGNORECASE)
 
 
 def clean_text(value: Optional[str]) -> str:
@@ -47,6 +47,8 @@ class WalmartCollector:
     company_name: str = "Walmart"
 
     def collect(self) -> List[JobPosting]:
+        from playwright.sync_api import sync_playwright
+
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=self.headless)
             page = browser.new_page()
@@ -61,9 +63,17 @@ class WalmartCollector:
             return jobs
 
     def _collect_role_links(self, page) -> List[str]:
+        parsed = urlparse(self.results_url)
+        hostname = parsed.netloc.lower()
+
+        if "careers.walmart.com" in hostname:
+            return self._collect_careers_role_links(page)
+        return self._collect_workday_role_links(page)
+
+    def _collect_workday_role_links(self, page) -> List[str]:
         collected: List[str] = []
-        current_url = self.results_url
         for page_num in range(self.max_pages):
+            current_url = next_page_url(self.results_url, page_num + 1) if page_num > 0 else self.results_url
             page.goto(current_url, wait_until="domcontentloaded")
             page.wait_for_timeout(3500)
             for _ in range(8):
@@ -81,8 +91,43 @@ class WalmartCollector:
                 )
             collected.extend(candidates)
             collected = uniq_preserve_order([link for link in collected if "/job/" in link])
-            current_url = next_page_url(self.results_url, page_num + 1)
         return collected
+
+    def _collect_careers_role_links(self, page) -> List[str]:
+        collected: List[str] = []
+        current_url = self.results_url
+        for _ in range(self.max_pages):
+            page.goto(current_url, wait_until="domcontentloaded")
+            page.wait_for_timeout(3500)
+            for _ in range(12):
+                page.mouse.wheel(0, 2400)
+                page.wait_for_timeout(600)
+
+            hrefs = page.eval_on_selector_all("a", """elements => elements.map(e => e.href).filter(Boolean)""")
+            candidates = []
+            for href in hrefs:
+                if "/us/en/jobs/" in href:
+                    candidates.append(href)
+            collected.extend(candidates)
+            collected = uniq_preserve_order(collected)
+
+            next_url = self._find_next_page_url(page)
+            if not next_url or next_url == current_url:
+                break
+            current_url = next_url
+
+        return collected
+
+    def _find_next_page_url(self, page) -> str:
+        hrefs = page.eval_on_selector_all(
+            "a",
+            """elements => elements.map(e => ({text: (e.innerText || '').trim(), href: e.href})).filter(x => x.href)""",
+        )
+        for item in hrefs:
+            text = clean_text(item.get("text", "")).lower()
+            if text in {"next", "next page", "next >", ">"}:
+                return item.get("href", "")
+        return ""
 
     def _parse_role_page(self, browser, url: str) -> Optional[JobPosting]:
         page = browser.new_page()
@@ -107,19 +152,42 @@ class WalmartCollector:
                 apply_url=apply_url,
                 job_id=job_id,
                 source_url=url,
-                metadata={"source": "walmart_workday"},
+                metadata={"source": "walmart_collector"},
             )
         finally:
             page.close()
 
+    def _extract_next_data(self, page) -> Dict[str, Any]:
+        raw = page.eval_on_selector("script#__NEXT_DATA__", "el => el ? el.textContent : ''")
+        if not raw:
+            return {}
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            return {}
+        return {}
+
     def _extract_title(self, page) -> str:
-        selectors = ["h1", "[data-automation-id='jobPostingHeader']", "[data-automation-id='jobTitle']"]
+        selectors = [
+            "h1",
+            "[data-automation-id='jobPostingHeader']",
+            "[data-automation-id='jobTitle']",
+            "[data-testid='job-title']",
+        ]
         for selector in selectors:
             locator = page.locator(selector).first
             if locator.count() > 0:
                 text = clean_text(locator.inner_text())
                 if text:
                     return text
+
+        next_data = self._extract_next_data(page)
+        possible = self._find_in_nested(next_data, ["title", "jobTitle", "name"])
+        if possible:
+            return clean_text(str(possible[0]))
+
         return "Unknown Title"
 
     def _extract_location(self, page) -> str:
@@ -127,6 +195,7 @@ class WalmartCollector:
             "[data-automation-id='locations']",
             "[data-automation-id='primaryLocation']",
             "[data-automation-id='jobPostingHeader']",
+            "[data-testid='job-location']",
         ]
         for selector in selectors:
             locator = page.locator(selector).first
@@ -134,6 +203,14 @@ class WalmartCollector:
                 text = clean_text(locator.inner_text())
                 if text and len(text) < 250:
                     return text
+
+        next_data = self._extract_next_data(page)
+        possible = self._find_in_nested(next_data, ["location", "locations", "jobLocation"])
+        if possible:
+            text = clean_text(str(possible[0]))
+            if text:
+                return text
+
         body = clean_text(page.locator("body").inner_text())
         m = re.search(r"locations?:\s*(.+?)(?:\s{2,}|posted on|time type|job requisition)", body, flags=re.IGNORECASE)
         return clean_text(m.group(1)) if m else ""
@@ -142,6 +219,7 @@ class WalmartCollector:
         selectors = [
             "[data-automation-id='jobPostingDescription']",
             "[data-automation-id='jobDescription']",
+            "[data-testid='job-description']",
             "main",
             "body",
         ]
@@ -151,6 +229,14 @@ class WalmartCollector:
                 text = clean_text(locator.inner_text())
                 if len(text) > 300:
                     return text
+
+        next_data = self._extract_next_data(page)
+        possible = self._find_in_nested(next_data, ["description", "jobDescription"])
+        if possible:
+            text = clean_text(str(possible[0]))
+            if len(text) > 100:
+                return text
+
         return clean_text(page.locator("body").inner_text())
 
     def _extract_work_mode(self, page, description: str, location: str) -> str:
@@ -172,12 +258,15 @@ class WalmartCollector:
         for item in hrefs:
             text = clean_text(item.get("text", "")).lower()
             href = item.get("href", "")
-            if any(token in text for token in ["apply", "apply now", "submit application"]):
+            if any(token in text for token in ["apply", "apply now", "submit application", "start application"]):
                 return href
         return url
 
     def _extract_job_id(self, url: str, description: str) -> str:
         m = WORKDAY_JOB_RE.search(url)
+        if m:
+            return m.group(1)
+        m = CAREERS_JOB_RE.search(url)
         if m:
             return m.group(1)
         m = re.search(r"job requisition\s*[:#]?\s*([a-z]-?\d+)", description, flags=re.IGNORECASE)
@@ -197,6 +286,23 @@ class WalmartCollector:
             for m in re.findall(pattern, description, flags=re.IGNORECASE):
                 matches.append(clean_text(m))
         return " ".join(uniq_preserve_order(matches))
+
+    def _find_in_nested(self, data: Any, keys: List[str]) -> List[str]:
+        results: List[str] = []
+
+        def walk(value: Any) -> None:
+            if isinstance(value, dict):
+                for k, v in value.items():
+                    if any(key.lower() == str(k).lower() for key in keys):
+                        if isinstance(v, (str, int, float)):
+                            results.append(str(v))
+                    walk(v)
+            elif isinstance(value, list):
+                for item in value:
+                    walk(item)
+
+        walk(data)
+        return uniq_preserve_order([clean_text(r) for r in results if clean_text(r)])
 
 
 def collect_walmart_jobs(results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal", max_pages: int = 1, max_jobs: int = 20, headless: bool = True, company_name: str = "Walmart") -> List[JobPosting]:
