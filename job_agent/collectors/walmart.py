@@ -44,6 +44,7 @@ class WalmartCollector:
     max_pages: int = 1
     max_jobs: int = 20
     headless: bool = True
+    company_name: str = "Walmart"
 
     def collect(self) -> List[JobPosting]:
         with sync_playwright() as p:
@@ -101,7 +102,7 @@ class WalmartCollector:
                 description=description,
                 location=location,
                 work_mode=work_mode,
-                company="Walmart",
+                company=self.company_name,
                 sponsorship_text=sponsorship_text,
                 apply_url=apply_url,
                 job_id=job_id,
@@ -198,5 +199,5 @@ class WalmartCollector:
         return " ".join(uniq_preserve_order(matches))
 
 
-def collect_walmart_jobs(results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal", max_pages: int = 1, max_jobs: int = 20, headless: bool = True) -> List[JobPosting]:
-    return WalmartCollector(results_url=results_url, max_pages=max_pages, max_jobs=max_jobs, headless=headless).collect()
+def collect_walmart_jobs(results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal", max_pages: int = 1, max_jobs: int = 20, headless: bool = True, company_name: str = "Walmart") -> List[JobPosting]:
+    return WalmartCollector(results_url=results_url, max_pages=max_pages, max_jobs=max_jobs, headless=headless, company_name=company_name).collect()

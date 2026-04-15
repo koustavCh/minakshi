@@ -1,0 +1,13 @@
+{
+  "full_name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1-555-123-4567",
+  "linkedin": "https://www.linkedin.com/in/janedoe",
+  "github": "https://github.com/janedoe",
+  "location": "Seattle, WA, United States",
+  "years_experience": 6,
+  "current_company": "Example Corp",
+  "current_title": "Senior Software Engineer",
+  "visa_sponsorship_required": true,
+  "authorized_to_work_us": true
+}
