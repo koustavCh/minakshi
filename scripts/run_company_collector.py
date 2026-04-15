@@ -79,25 +79,14 @@ def main() -> None:
     profile = _read_profile(default_years=5)
 
     agent = CompanyJobAgent()
-    try:
-        matched_jobs, output = agent.collect_and_rank(
-            company_name=company_name,
-            careers_url=careers_url,
-            resume_profile=ResumeProfile(years_experience=profile.years_experience),
-            max_pages=max_pages,
-            max_jobs=max_jobs,
-            headless=headless,
-        )
-    except ModuleNotFoundError as exc:
-        if exc.name == "playwright":
-            raise RuntimeError(
-                "Playwright is required for job collection and application flow. "
-                "Install it with: python3 -m pip install playwright && python3 -m playwright install chromium"
-            ) from exc
-        raise
-    except ValueError as exc:
-        print(f"Input validation error: {exc}")
-        return
+    matched_jobs, output = agent.collect_and_rank(
+        company_name=company_name,
+        careers_url=careers_url,
+        resume_profile=ResumeProfile(years_experience=profile.years_experience),
+        max_pages=max_pages,
+        max_jobs=max_jobs,
+        headless=headless,
+    )
 
     matched_jobs = sorted(matched_jobs, key=lambda r: r.rank_score, reverse=True)
     print("\n" + "=" * 100)
@@ -106,10 +95,6 @@ def main() -> None:
     print(f"Collected jobs: {output.summary.get('total_jobs_seen', 0)}")
     print(f"Policy eligible (apply_now + manual_review): {len(output.apply_now) + len(output.manual_review)}")
     print(f"Resume-experience qualified: {len(matched_jobs)}")
-
-    if output.summary.get("total_jobs_seen", 0) == 0 and "careers.walmart.com" in careers_url.lower():
-        print("Hint: Walmart careers pages can lazy-load. Retry with headless='n' and max_pages > 1.")
-        print("Hint: You can also pass a direct job URL like https://careers.walmart.com/us/en/jobs/R-2414965")
 
     if not matched_jobs:
         print("No relevant roles found for current policy/profile.")

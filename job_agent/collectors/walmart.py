@@ -305,17 +305,5 @@ class WalmartCollector:
         return uniq_preserve_order([clean_text(r) for r in results if clean_text(r)])
 
 
-def collect_walmart_jobs(
-    results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal",
-    max_pages: int = 1,
-    max_jobs: int = 20,
-    headless: bool = True,
-    company_name: str = "Walmart",
-) -> List[JobPosting]:
-    return WalmartCollector(
-        results_url=results_url,
-        max_pages=max_pages,
-        max_jobs=max_jobs,
-        headless=headless,
-        company_name=company_name,
-    ).collect()
+def collect_walmart_jobs(results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal", max_pages: int = 1, max_jobs: int = 20, headless: bool = True, company_name: str = "Walmart") -> List[JobPosting]:
+    return WalmartCollector(results_url=results_url, max_pages=max_pages, max_jobs=max_jobs, headless=headless, company_name=company_name).collect()

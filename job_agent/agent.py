@@ -19,19 +19,6 @@ def _normalize_company_name(company_name: str) -> str:
     return " ".join(company_name.lower().split())
 
 
-def _normalize_careers_url(careers_url: str) -> str:
-    raw = careers_url.strip()
-    if not raw:
-        raise ValueError("careers URL is required")
-    if not raw.startswith(("http://", "https://")):
-        raw = f"https://{raw}"
-
-    parsed = urlparse(raw)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc or "." not in parsed.netloc:
-        raise ValueError(f"Invalid careers URL: {careers_url!r}. Provide a full URL like https://careers.walmart.com/us/en/results?searchQuery=software")
-    return raw
-
-
 def _extract_required_years(text: str) -> Optional[int]:
     matches = re.findall(r"(\d{1,2})\s*\+?\s*(?:years|year|yrs|yr)", text, flags=re.IGNORECASE)
     if not matches:
@@ -114,7 +101,6 @@ class CompanyJobAgent:
         max_jobs: int,
         headless: bool,
     ) -> List[JobPosting]:
-        careers_url = _normalize_careers_url(careers_url)
         company_key = _normalize_company_name(company_name)
         factory = self.collectors.get(company_key)
         if factory:
