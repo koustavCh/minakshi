@@ -52,6 +52,9 @@ class GoldmanSachsCollector:
             return jobs
 
     def _collect_role_links(self, page) -> List[str]:
+        if ROLE_LINK_RE.match(self.results_url):
+            return [self.results_url]
+
         collected: List[str] = []
         current_url = self.results_url
         for _ in range(self.max_pages):
@@ -75,7 +78,7 @@ class GoldmanSachsCollector:
         for item in hrefs:
             text = clean_text(item.get("text", "")).lower()
             href = item.get("href", "")
-            if text in {"next", "next page", ">"} and href:
+            if text in {"next", "next page", ">"} and href.startswith(("http://", "https://")):
                 return href
         return None
 
