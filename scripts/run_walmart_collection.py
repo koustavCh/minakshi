@@ -23,14 +23,11 @@ def main() -> None:
     raw_headless = input("Run headless? [y]: ").strip().lower()
     headless = raw_headless != "n"
 
-    print("
-Collecting Walmart jobs...")
+    print("\nCollecting Walmart jobs...")
     collector = WalmartCollector(results_url=url, max_pages=max_pages, max_jobs=max_jobs, headless=headless)
     jobs = collector.collect()
 
-    print(f"
-Collected {len(jobs)} jobs. Running matcher...
-")
+    print(f"\nCollected {len(jobs)} jobs. Running matcher...\n")
 
     pipeline = JobSearchPipeline(exploratory_ratio=0.30, max_per_company=20, deduplicate_similar_titles=True)
     output = pipeline.run(jobs)

@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Set
 import re
 
-from playwright.sync_api import sync_playwright
-
 from job_agent.matcher.models import JobPosting
 
 
@@ -37,6 +35,8 @@ class GoldmanSachsCollector:
     headless: bool = False
 
     def collect(self) -> List[JobPosting]:
+        from playwright.sync_api import sync_playwright
+
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=self.headless)
             page = browser.new_page()
@@ -52,6 +52,9 @@ class GoldmanSachsCollector:
             return jobs
 
     def _collect_role_links(self, page) -> List[str]:
+        if ROLE_LINK_RE.match(self.results_url):
+            return [self.results_url]
+
         collected: List[str] = []
         current_url = self.results_url
         for _ in range(self.max_pages):
@@ -75,7 +78,7 @@ class GoldmanSachsCollector:
         for item in hrefs:
             text = clean_text(item.get("text", "")).lower()
             href = item.get("href", "")
-            if text in {"next", "next page", ">"} and href:
+            if text in {"next", "next page", ">"} and href.startswith(("http://", "https://")):
                 return href
         return None
 
@@ -123,7 +126,7 @@ class GoldmanSachsCollector:
                     candidate = candidate[idx:]
                     break
             return candidate
-        m = re.search(r"^(.+?)\s+Apply", body_text, flags=re.IGNORECASE)
+        m = re.search(r"^(.+?)\s+Apply", body_text, flags=re.IGNORECASE)
         if m:
             candidate = clean_text(m.group(1))
             if len(candidate) < 200:
@@ -132,11 +135,10 @@ class GoldmanSachsCollector:
 
     def _extract_location(self, page) -> str:
         body_text = clean_text(page.locator("body").inner_text())
-        m = re.search(r"location_on\s+(.+?)\s+share", body_text, flags=re.IGNORECASE)
+        m = re.search(r"location_on\s+(.+?)\s+share", body_text, flags=re.IGNORECASE)
         if m:
             return clean_text(m.group(1))
-        for pattern in [r"Location\s*[:\-]\s*([^
-]+)", r"Location\s+([A-Z][A-Za-z\s,]+)"]:
+        for pattern in [r"Location\s*[:\-]\s*([^\n]+)", r"Location\s+([A-Z][A-Za-z\s,]+)"]:
             m = re.search(pattern, body_text, flags=re.IGNORECASE)
             if m:
                 return clean_text(m.group(1))
