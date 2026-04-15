@@ -65,10 +65,7 @@ class WalmartCollector:
     def _collect_role_links(self, page) -> List[str]:
         parsed = urlparse(self.results_url)
         hostname = parsed.netloc.lower()
-        path = parsed.path.lower()
 
-        if "/us/en/jobs/" in path or "/job/" in path:
-            return [self.results_url]
         if "careers.walmart.com" in hostname:
             return self._collect_careers_role_links(page)
         return self._collect_workday_role_links(page)
@@ -128,9 +125,8 @@ class WalmartCollector:
         )
         for item in hrefs:
             text = clean_text(item.get("text", "")).lower()
-            href = item.get("href", "")
-            if text in {"next", "next page", "next >", ">"} and href.startswith(("http://", "https://")):
-                return href
+            if text in {"next", "next page", "next >", ">"}:
+                return item.get("href", "")
         return ""
 
     def _parse_role_page(self, browser, url: str) -> Optional[JobPosting]:
@@ -309,17 +305,5 @@ class WalmartCollector:
         return uniq_preserve_order([clean_text(r) for r in results if clean_text(r)])
 
 
-def collect_walmart_jobs(
-    results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal",
-    max_pages: int = 1,
-    max_jobs: int = 20,
-    headless: bool = True,
-    company_name: str = "Walmart",
-) -> List[JobPosting]:
-    return WalmartCollector(
-        results_url=results_url,
-        max_pages=max_pages,
-        max_jobs=max_jobs,
-        headless=headless,
-        company_name=company_name,
-    ).collect()
+def collect_walmart_jobs(results_url: str = "https://walmart.wd5.myworkdayjobs.com/WalmartExternal", max_pages: int = 1, max_jobs: int = 20, headless: bool = True, company_name: str = "Walmart") -> List[JobPosting]:
+    return WalmartCollector(results_url=results_url, max_pages=max_pages, max_jobs=max_jobs, headless=headless, company_name=company_name).collect()

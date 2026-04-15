@@ -19,19 +19,6 @@ def _normalize_company_name(company_name: str) -> str:
     return " ".join(company_name.lower().split())
 
 
-def _normalize_careers_url(careers_url: str) -> str:
-    raw = careers_url.strip()
-    if not raw:
-        raise ValueError("careers URL is required")
-    if not raw.startswith(("http://", "https://")):
-        raw = f"https://{raw}"
-
-    parsed = urlparse(raw)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc or "." not in parsed.netloc:
-        raise ValueError(f"Invalid careers URL: {careers_url!r}. Provide a full URL like https://careers.walmart.com/us/en/results?searchQuery=software")
-    return raw
-
-
 def _extract_required_years(text: str) -> Optional[int]:
     matches = re.findall(r"(\d{1,2})\s*\+?\s*(?:years|year|yrs|yr)", text, flags=re.IGNORECASE)
     if not matches:
@@ -114,7 +101,6 @@ class CompanyJobAgent:
         max_jobs: int,
         headless: bool,
     ) -> List[JobPosting]:
-        careers_url = _normalize_careers_url(careers_url)
         company_key = _normalize_company_name(company_name)
         factory = self.collectors.get(company_key)
         if factory:
@@ -122,34 +108,20 @@ class CompanyJobAgent:
             return collector.collect()
 
         hostname = urlparse(careers_url).netloc.lower()
-        if "careers.walmart.com" in hostname or "walmart" in hostname:
-            return WalmartCollector(
-                results_url=careers_url,
-                max_pages=max_pages,
-                max_jobs=max_jobs,
-                headless=headless,
-                company_name=company_name or "Walmart",
-            ).collect()
-        if "higher.gs.com" in hostname:
-            return GoldmanSachsCollector(
-                results_url=careers_url,
-                max_pages=max_pages,
-                max_jobs=max_jobs,
-                headless=headless,
-            ).collect()
         if "myworkdayjobs.com" in hostname:
-            return WalmartCollector(
+            generic_workday = WalmartCollector(
                 results_url=careers_url,
                 max_pages=max_pages,
                 max_jobs=max_jobs,
                 headless=headless,
                 company_name=company_name,
-            ).collect()
+            )
+            return generic_workday.collect()
 
         supported = ", ".join(sorted(self.collectors.keys()))
         raise ValueError(
             f"Unsupported company/url combination for '{company_name}'. Supported companies: {supported}. "
-            "Supported URL inference currently covers careers.walmart.com, higher.gs.com, and myworkdayjobs.com."
+            "For generic fallback, provide a Workday careers URL."
         )
 
     def _filter_experience_fit(self, ranked_jobs: List[RankedJob], resume_profile: ResumeProfile) -> List[RankedJob]:

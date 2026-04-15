@@ -60,27 +60,11 @@ Use this when you want to input:
 - resume JSON path (optional) or manual profile fields
 
 The agent will:
-- collect roles using the company collector (with URL-based inference for Walmart careers, Goldman roles, and Workday URLs)
-- accept direct job URLs (for example Walmart `/us/en/jobs/R-...`) as single-role collection inputs
+- collect roles using the company collector (with Workday URL fallback for unknown companies)
 - score with the existing policy
 - return only policy-eligible roles that also fit your resume experience
 - print a checkbox-style list so you can select which roles to apply for
 - open each selected apply page, auto-fill known fields, ask clarifying questions when values are missing, and stop before submit
-
-## Validate readiness gates
-
-```bash
-python scripts/validate_agent_readiness.py
-```
-
-Optional live gate:
-
-```bash
-python scripts/validate_agent_readiness.py \
-  --live-company walmart \
-  --live-url "https://careers.walmart.com/us/en/jobs/R-2414965" \
-  --years 5
-```
 
 ## Run sample ranking
 
