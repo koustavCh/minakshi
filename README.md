@@ -46,6 +46,26 @@ https://walmart.wd5.myworkdayjobs.com/WalmartExternal
 python scripts/run_goldman_sachs_collection.py
 ```
 
+## Run generic company collector (company + URL + resume years)
+
+```bash
+python scripts/run_company_collector.py
+```
+
+Sample resume profile JSON: `job_agent/config/resume_profile.sample.json`
+
+Use this when you want to input:
+- company name
+- careers/results URL
+- resume JSON path (optional) or manual profile fields
+
+The agent will:
+- collect roles using the company collector (with Workday URL fallback for unknown companies)
+- score with the existing policy
+- return only policy-eligible roles that also fit your resume experience
+- print a checkbox-style list so you can select which roles to apply for
+- open each selected apply page, auto-fill known fields, ask clarifying questions when values are missing, and stop before submit
+
 ## Run sample ranking
 
 ```bash
