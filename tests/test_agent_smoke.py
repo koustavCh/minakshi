@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from job_agent.agent import CompanyJobAgent, ResumeProfile
+from job_agent.agent import CompanyJobAgent, ResumeProfile, _normalize_careers_url
 from job_agent.collectors.walmart import WalmartCollector
 
 
@@ -32,28 +32,16 @@ class FakePage:
 
 
 class UrlValidationTests(unittest.TestCase):
-    def test_collect_jobs_accepts_url_without_scheme(self) -> None:
-        agent = CompanyJobAgent()
-        with patch("job_agent.collectors.walmart.WalmartCollector.collect", return_value=[] ):
-            jobs = agent.collect_jobs(
-                company_name="walmart",
-                careers_url="careers.walmart.com/us/en/results?searchQuery=software",
-                max_pages=1,
-                max_jobs=5,
-                headless=True,
-            )
-        self.assertEqual(jobs, [])
+    def test_normalize_careers_url_accepts_valid(self) -> None:
+        normalized = _normalize_careers_url("careers.walmart.com/us/en/results?searchQuery=software")
+        self.assertEqual(
+            normalized,
+            "https://careers.walmart.com/us/en/results?searchQuery=software",
+        )
 
-    def test_collect_jobs_rejects_invalid_url(self) -> None:
-        agent = CompanyJobAgent()
+    def test_normalize_careers_url_rejects_invalid(self) -> None:
         with self.assertRaises(ValueError):
-            agent.collect_jobs(
-                company_name="walmart",
-                careers_url="First DNUM call right after startup: HTTP 000",
-                max_pages=1,
-                max_jobs=5,
-                headless=True,
-            )
+            _normalize_careers_url("First DNUM call right after startup: HTTP 000")
 
 
 class WalmartCollectorTests(unittest.TestCase):

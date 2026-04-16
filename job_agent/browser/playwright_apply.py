@@ -13,6 +13,8 @@ Behavior:
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from playwright.sync_api import sync_playwright
+
 from job_agent.application.profile import ApplicantProfile
 
 
@@ -219,8 +221,6 @@ def _attempt_fill_selects(page, profile: ApplicantProfile) -> FillStats:
 
 
 def run_apply_session(url: str, profile: ApplicantProfile, allow_submit: bool = False, headless: bool = False) -> None:
-    from playwright.sync_api import sync_playwright
-
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
         page = browser.new_page()
